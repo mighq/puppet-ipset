@@ -1,0 +1,154 @@
+#!/bin/bash
+
+### config
+
+default_cfg='/etc/sysconfig/ipset.d'
+
+### functions
+
+usage() {
+cat << EOF
+Usage: ${0/*\//} [-c CONFIG_DIR] [-d] -i SETNAME
+
+Ipset synchronization helper. Applies configured ipset to the kernel.
+
+Meant to be used together with puppet module. Puppet will take care
+of creating config files with desired content.
+
+Options:
+  -c  Configuration directory for ipsets
+  -d  Checks if in-kernel set SETNAME is in sync with set config files
+      Does not apply configured state to the kernel
+        * 0 exit code, when set is in sync
+        * non-0 exit code, when the set differs from configured state
+  -h  Shows this help message
+  -i  Name of managed ipset
+EOF
+}
+
+function get_header_file() {
+  echo "${cfg}/$1.hdr"
+}
+
+function get_content_file() {
+  echo "${cfg}/$1.set"
+}
+
+function construct_ipset_dump() {
+  local id=$1
+
+  local f_header=$(get_header_file ${id})
+  local f_content=$(get_content_file ${id})
+
+  if [ ! -f "${f_header}" ]; then
+    echo "Set configuration file '${f_header}' does not exist!" >&2
+    exit 5
+  fi
+  if [ ! -f "${f_content}" ]; then
+    echo "Set configuration file '${f_content}' does not exist!" >&2
+    exit 6
+  fi
+
+  # recreate the dump format from config files manually
+  (
+    cat "${f_header}";
+    cat "${f_content}" | grep -v '^[ ]*#' | sed -re "s/(.*)/add ${id} \\1/" | LC_ALL=C sort
+  )
+}
+
+function get_ipset_dump() {
+  local id=$1
+
+  ipset save ${id} | egrep "^(add|create) ${id} " | (read hdr; echo ${hdr}; LC_ALL=C sort)
+}
+
+function import_ipset() {
+  local id=$1
+
+  ipset restore < <(construct_ipset_dump ${id})
+}
+
+function ipset_exists() {
+  local id=$1
+
+  ipset list ${id} > /dev/null 2>&1
+}
+
+function ipset_insync() {
+  local id=$1
+
+  diff <(get_ipset_dump ${id}) <(construct_ipset_dump ${id}) > /dev/null
+}
+
+### === main ===
+
+### cli params
+
+set_id=''
+check_only=0
+cfg="${default_cfg}"
+
+while getopts "c:dhi:" OPTION; do
+    case ${OPTION} in
+      c)
+        cfg=${OPTARG}
+        ;;
+      d)
+        check_only=1
+        ;;
+      h)
+        usage
+        exit 1
+        ;;
+      i)
+        set_id=${OPTARG}
+        ;;
+    esac
+done
+
+if [ -z "${set_id}" ]; then
+  echo "ERROR: Specify set id!" >&2
+  usage
+  exit 2
+fi
+
+if [ ! -d "${cfg}" ]; then
+  echo "ERROR: Config directory '${cfg}' does not exist!" >&2
+  exit 7
+fi
+
+### sync runtime
+
+if ipset_exists ${set_id}; then
+  # check for differences
+  if ! ipset_insync ${set_id}; then
+    # loaded set is different
+
+    # checking for diff only
+    if [ ${check_only} -ne 0 ]; then
+      # indicate a difference
+      # and don't continue
+      exit 3
+    fi
+
+    # drop the old one
+    ipset destroy ${set_id}
+
+    # create it with content as expected
+    import_ipset ${set_id}
+  else
+    # no difference
+    exit 0
+  fi
+else
+  # set not present yet
+
+  # checking for presence and the set does not exist
+  if [ ${check_only} -ne 0 ]; then
+    # indicate a difference
+    exit 4
+  fi
+
+  # create it with content as expected
+  import_ipset ${set_id}
+fi

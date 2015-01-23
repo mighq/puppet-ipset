@@ -1,0 +1,5 @@
+task
+
+exec /usr/local/sbin/ipset_init -c "<%= @cfg %>"
+
+start on starting rc RUNLEVEL=[2345]
