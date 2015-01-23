@@ -12,7 +12,7 @@
     "iptables"
   ],
   "issues_url": "https://github.com/mighq/puppet-ipset/issues",
-  "project_page": "https://forge.puppetlabs.com/mighq/ipset",
+  "project_page": "https://github.com/mighq/puppet-ipset",
   "operatingsystem_support": [
     {
       "operatingsystem": "RedHat",
@@ -22,6 +22,5 @@
     }
   ],
   "dependencies": [
-  
   ]
 }
