@@ -27,7 +27,17 @@ class ipset::install {
       content => template("${module_name}/init.upstart.erb"),
     }
   } else {
-    warning('Autostart of ipset not implemented for this OS.')
+    if $::osfamily == 'RedHat' and $::operatingsystemmajrelease == '7' {
+      # systemd
+      file { '/usr/lib/systemd/system/ipset.service':
+        owner   => 'root',
+        group   => 'root',
+        mode    => '0644',
+        content => template("${module_name}/systemd.service.erb"),
+      }
+    } else {
+      warning('Autostart of ipset not implemented for this OS.')
+    }
   }
 }
 
