@@ -35,6 +35,10 @@ class ipset::install {
         mode    => '0644',
         content => template("${module_name}/systemd.service.erb"),
       }
+      file { '/etc/systemd/system/basic.target.wants/ipset.service':
+        ensure => link,
+        target => '/usr/lib/systemd/system/ipset.service',
+      }
     } else {
       warning('Autostart of ipset not implemented for this OS.')
     }
