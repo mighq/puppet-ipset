@@ -1,0 +1,7 @@
+2015-04-26 - 0.2.0
+* code quality tuning
+* usage examples added to README.md
+* systemd service definition / centos7 support
+
+2015-01-23 - 0.1.0
+* initial module release
