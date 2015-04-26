@@ -1,0 +1,12 @@
+[Unit]
+Description=define and fill-in ipsets
+Documentation=https://github.com/mighq/puppet-ipset
+Before=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/ipset_init -c "<%= @cfg %>"
+
+[Install]
+WantedBy=basic.target
