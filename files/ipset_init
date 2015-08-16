@@ -26,7 +26,7 @@ scd=$(dirname $(readlink -f "${BASH_SOURCE[0]}"))
 
 cfg="${default_cfg}"
 
-while getopts "c:dhi:" OPTION; do
+while getopts "c:h:" OPTION; do
     case ${OPTION} in
       c)
         cfg=${OPTARG}
@@ -46,7 +46,8 @@ fi
 ### autostart
 
 # iterate over basenames in config directory
-for item in $(find "${cfg}" -mindepth 1 -maxdepth 1 -type f -and \( -name '*.set' -or -name '*.hdr' \) -printf '%f\n' | sed -re 's/\.[^.]+$//' | sed -e '/^$/d' | sort -u); do
+for path in `echo $cfg/*.set`; do
+  item=`basename $path .set`
   # skip if the configuration is not complete
   if ! ( [ -f "${cfg}/${item}.hdr" ] && [ -f "${cfg}/${item}.set" ] ); then
     continue
