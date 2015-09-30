@@ -1,7 +1,7 @@
 [Unit]
 Description=define and fill-in ipsets
 Documentation=https://github.com/mighq/puppet-ipset
-Before=network.target
+Before=<%= @before_target %>
 
 [Service]
 Type=oneshot
