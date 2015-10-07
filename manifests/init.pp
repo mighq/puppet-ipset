@@ -63,8 +63,9 @@ define ipset (
     }
 
     # clear ipset from kernel
-    exec { "/usr/sbin/ipset destroy ${title}":
-      onlyif  => "/usr/sbin/ipset list ${title} &>/dev/null",
+    exec { "ipset destroy ${title}":
+      onlyif  => "ipset list ${title} &>/dev/null",
+      path    => [ '/sbin', '/usr/sbin', '/bin', '/usr/bin' ],
       require => Package['ipset'],
     }
   }

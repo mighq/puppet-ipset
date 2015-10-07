@@ -31,7 +31,7 @@ class ipset::install($init_system = undef) {
           }
         }
         /^7.*/: { # systemd
-          file { '/usr/lib/systemd/system/ipset.service':
+          file { '/etc/systemd/system/ipset.service':
             owner   => 'root',
             group   => 'root',
             mode    => '0644',
@@ -56,7 +56,7 @@ class ipset::install($init_system = undef) {
                 }
               }
               else {
-                file { '/usr/lib/systemd/system/ipset.service':
+                file { '/etc/systemd/system/ipset.service':
                   owner   => 'root',
                   group   => 'root',
                   mode    => '0644',
