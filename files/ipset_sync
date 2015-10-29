@@ -52,7 +52,7 @@ function construct_ipset_dump() {
   # recreate the dump format from config files manually
   (
     cat "${f_header}";
-    cat "${f_content}" | grep -v '^[ ]*#' | sed -re "s/(.*)/add ${id} \\1/" | LC_ALL=C sort
+    cat "${f_content}" | grep -v '^[ ]*#' | sed -re "s|(\.\[0-9\]\+)/32|\\1|;s|/128||;s/(.*)/add ${id} \\1/" | LC_ALL=C sort
   )
 }
 
