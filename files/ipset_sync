@@ -71,7 +71,9 @@ function import_ipset() {
 function ipset_exists() {
   local id=$1
 
-  ipset list ${id} > /dev/null 2>&1
+  local exist=$(ipset test ${id} 1.2.3.4 2>&1)
+  [[ $exist =~ "given name does not exist" ]] && return 1
+  return 0
 }
 
 function ipset_insync() {
