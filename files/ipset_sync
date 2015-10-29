@@ -52,7 +52,7 @@ function construct_ipset_dump() {
   # recreate the dump format from config files manually
   (
     cat "${f_header}";
-    cat "${f_content}" | grep -v '^[ ]*#' | sed -re "s/(.*)/add ${id} \\1/" | LC_ALL=C sort
+    cat "${f_content}" | grep -v '^[ ]*#' | sed -re "s|(\.\[0-9\]\+)/32|\\1|;s|/128||;s/(.*)/add ${id} \\1/" | LC_ALL=C sort
   )
 }
 
@@ -71,7 +71,9 @@ function import_ipset() {
 function ipset_exists() {
   local id=$1
 
-  ipset list ${id} > /dev/null 2>&1
+  local exist=$(ipset test ${id} 1.2.3.4 2>&1)
+  [[ $exist =~ "given name does not exist" ]] && return 1
+  return 0
 }
 
 function ipset_insync() {

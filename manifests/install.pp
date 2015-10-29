@@ -1,12 +1,22 @@
-class ipset::install {
+class ipset::install (
+    $config_path = $::ipset::params::config_path,
+    $etc_systemd_file = $::ipset::params::etc_systemd_file,
+    $lib_systemd_file = $::ipset::params::lib_systemd_file,
+) {
   include ipset::params
 
-  $cfg = $::ipset::params::config_path
+  $cfg = $config_path
 
   # main package
   package { $::ipset::params::package:
     alias  => 'ipset',
     ensure => installed,
+  }
+
+  if $::osfamily == 'Debian' and $::operatingsystemmajrelease == '8' {
+      package { 'netfilter-persistent':
+        ensure => installed,
+      }
   }
 
   # directory with config profiles (*.set & *.hdr files)
@@ -26,21 +36,21 @@ class ipset::install {
       mode    => '0644',
       content => template("${module_name}/init.upstart.erb"),
     }
-  } else {
-    if $::osfamily == 'RedHat' and $::operatingsystemmajrelease == '7' {
+  } elsif (($::osfamily == 'RedHat' and $::operatingsystemmajrelease == '7')
+            or ($::osfamily == 'Debian' and $::operatingsystemmajrelease == '8'))
+  {
       # systemd
-      file { '/usr/lib/systemd/system/ipset.service':
+      file { $::ipset::params::lib_systemd_file:
         owner   => 'root',
         group   => 'root',
         mode    => '0644',
         content => template("${module_name}/systemd.service.erb"),
       }
-      file { '/etc/systemd/system/basic.target.wants/ipset.service':
+      file { $::ipset::params::etc_systemd_file:
         ensure => link,
-        target => '/usr/lib/systemd/system/ipset.service',
+        target => $::ipset::params::lib_systemd_file,
       }
-    } else {
+  } else {
       warning('Autostart of ipset not implemented for this OS.')
-    }
   }
 }
