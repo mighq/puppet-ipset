@@ -36,6 +36,7 @@ function get_content_file() {
 
 function construct_ipset_dump() {
   local id=$1
+  local setname=${2:-$id}
 
   local f_header=$(get_header_file ${id})
   local f_content=$(get_content_file ${id})
@@ -51,8 +52,8 @@ function construct_ipset_dump() {
 
   # recreate the dump format from config files manually
   (
-    cat "${f_header}";
-    cat "${f_content}" | grep -v '^[ ]*#' | sed -re "s/(.*)/add ${id} \\1/" | LC_ALL=C sort
+    cat "${f_header}" | sed "s/^create ${id} /create ${setname} /"
+    cat "${f_content}" | grep -v '^[ ]*#' | sed -re "s|(\.\[0-9\]\+)/32|\\1|;s|/128||;s/(.*)/add ${setname} \\1/" | LC_ALL=C sort
   )
 }
 
@@ -64,8 +65,9 @@ function get_ipset_dump() {
 
 function import_ipset() {
   local id=$1
+  local setname=${2:-$id}
 
-  ipset restore < <(construct_ipset_dump ${id})
+  ipset restore < <(construct_ipset_dump ${id} ${setname})
 }
 
 function ipset_exists() {
@@ -78,6 +80,18 @@ function ipset_insync() {
   local id=$1
 
   diff <(get_ipset_dump ${id}) <(construct_ipset_dump ${id}) > /dev/null
+}
+
+function ipset_hdr_insync() {
+  local id=$1
+
+  diff <(get_ipset_dump ${id} | grep ^create) <(construct_ipset_dump ${id} | grep ^create) > /dev/null
+}
+
+function ipset_set_insync() {
+  local id=$1
+
+  diff <(get_ipset_dump ${id} | grep ^add) <(construct_ipset_dump ${id} | grep ^add) > /dev/null
 }
 
 ### === main ===
@@ -121,8 +135,8 @@ fi
 
 if ipset_exists ${set_id}; then
   # check for differences
-  if ! ipset_insync ${set_id}; then
-    # loaded set is different
+  if ! ipset_hdr_insync ${set_id}; then
+    # loaded hdr is different
 
     # checking for diff only
     if [ ${check_only} -ne 0 ]; then
@@ -137,8 +151,28 @@ if ipset_exists ${set_id}; then
     # create it with content as expected
     import_ipset ${set_id}
   else
-    # no difference
-    exit 0
+    if ! ipset_set_insync ${set_id}; then
+      # loaded set is different
+
+      # checking for diff only
+      if [ ${check_only} -ne 0 ]; then
+        # indicate a difference
+        # and don't continue
+        exit 3
+      fi
+
+      # create a new set with expected content, to swap with old set
+      import_ipset ${set_id} SWAP_${set_id}
+
+      # swap the contents of the sets
+      ipset swap SWAP_${set_id} ${set_id}
+
+      # drop the swap
+      ipset destroy SWAP_${set_id}
+      # no difference
+    else
+      exit 0
+    fi
   fi
 else
   # set not present yet
