@@ -7,6 +7,7 @@ define ipset (
     'hashsize' => '1024',
     'maxelem'  => '65536',
   },
+  $keep_in_sync = true,
 ) {
   include ipset::params
 
@@ -54,7 +55,10 @@ define ipset (
       path      => [ '/sbin', '/usr/sbin', '/bin', '/usr/bin' ],
 
       require   => Package['ipset'],
-      subscribe => File["${::ipset::params::config_path}/${title}.set"],
+    }
+
+    if $keep_in_sync {
+        File["${::ipset::params::config_path}/${title}.set"] ~> Exec["sync_ipset_${title}"]
     }
   } else {
     # ensuring absence
