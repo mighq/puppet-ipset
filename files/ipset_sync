@@ -68,6 +68,40 @@ function import_ipset() {
   ipset restore < <(construct_ipset_dump ${id})
 }
 
+function update_ipset() {
+  local id=$1
+  local tmp_id="$id-tmp"
+
+  local f_header=$(get_header_file ${id})
+  local f_content=$(get_content_file ${id})
+  local f_tmp_header=$(get_header_file ${tmp_id})
+  local f_tmp_content=$(get_content_file ${tmp_id})
+
+  # Create temporary files with the new name
+  cp ${f_header} ${f_tmp_header}
+  cp ${f_content} ${f_tmp_content}
+  sed -e "s/create ${id}/create ${tmp_id}/" -i ${f_tmp_header}
+
+  # Create the temporary ipset
+  import_ipset ${tmp_id}
+  if [[ $? -ne 0 ]] ; then
+    rm -f ${f_tmp_header} ${f_tmp_content}
+    exit 1
+  fi
+
+  # Swap the two ipsets
+  ipset swap ${id} ${tmp_id}
+  if [[ $? -ne 0 ]] ; then
+    ipset destroy ${tmp_id}
+    rm -f ${f_tmp_header} ${f_tmp_content}
+    exit 1
+  fi
+
+  # Cleanup
+  ipset destroy ${tmp_id}
+  rm -f ${f_tmp_header} ${f_tmp_content}
+}
+
 function ipset_exists() {
   local id=$1
 
@@ -131,11 +165,9 @@ if ipset_exists ${set_id}; then
       exit 3
     fi
 
-    # drop the old one
-    ipset destroy ${set_id}
-
-    # create it with content as expected
-    import_ipset ${set_id}
+    # create a new ipset and swap it with the current one
+    # this allows us to modify an ipset that is currently in use, without downtime
+    update_ipset ${set_id}
   else
     # no difference
     exit 0
