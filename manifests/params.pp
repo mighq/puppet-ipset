@@ -6,6 +6,7 @@ class ipset::params {
 
   $config_path = $::osfamily ? {
     'RedHat' => '/etc/sysconfig/ipset.d',
+    'Debian' => '/etc/ipset.d',
     default  => '/etc/ipset.d',
   }
 }
