@@ -1,0 +1,1 @@
+../../../.rspec-puppet/spec_helper.rb

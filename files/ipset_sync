@@ -52,7 +52,7 @@ function construct_ipset_dump() {
   # recreate the dump format from config files manually
   (
     cat "${f_header}";
-    cat "${f_content}" | grep -v '^[ ]*#' | sed -re "s/(.*)/add ${id} \\1/" | LC_ALL=C sort
+    cat "${f_content}" | sed -e '/^create/d' -e '/^[ ]*#/d' -e 's/#.*$//g' -e'/^$/d'  -re "s/(.*)/add ${id} \\1/" | LC_ALL=C sort | LC_ALL=C uniq
   )
 }
 
@@ -66,6 +66,17 @@ function import_ipset() {
   local id=$1
 
   ipset restore < <(construct_ipset_dump ${id})
+}
+
+function update_ipset() {
+  local id=$1
+  local prefix="tempipset_99_"
+
+  local content=$(construct_ipset_dump ${id})
+  local tempcontent=$(echo "${content}" | sed -e "s/${id}/${prefix}${id}/")
+  ipset restore < <(echo "${tempcontent}")
+  ipset swap "${id}" "${prefix}${id}"
+  ipset destroy "${prefix}${id}"
 }
 
 function ipset_exists() {
@@ -131,11 +142,8 @@ if ipset_exists ${set_id}; then
       exit 3
     fi
 
-    # drop the old one
-    ipset destroy ${set_id}
-
-    # create it with content as expected
-    import_ipset ${set_id}
+    # Update ipset
+    update_ipset ${set_id}
   else
     # no difference
     exit 0
