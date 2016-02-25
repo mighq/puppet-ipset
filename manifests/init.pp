@@ -28,13 +28,11 @@ define ipset (
     if $set =~ /^puppet:\/\// {
       # passed as puppet file
       file { "${::ipset::params::config_path}/${title}.set":
-        ensure  => present,
         source  => $set,
       }
     } elsif $set =~ /^file:\/\// {
       # passed as target node file
       file { "${::ipset::params::config_path}/${title}.set":
-        ensure  => present,
         source  => regsubst($set, '^.{7}', ''),
       }
     } elsif is_array($set) {
