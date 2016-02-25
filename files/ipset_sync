@@ -52,14 +52,14 @@ function construct_ipset_dump() {
   # recreate the dump format from config files manually
   (
     cat "${f_header}";
-    cat "${f_content}" | grep -v '^[ ]*#' | sed -re "s/(.*)/add ${id} \\1/" | LC_ALL=C sort
+    cat "${f_content}" | grep -v '^[ ]*#' | grep -v '^[ ]*$' | sed -re "s/(.*)/add ${id} \\1/" | LC_ALL=C sort --unique
   )
 }
 
 function get_ipset_dump() {
   local id=$1
 
-  ipset save ${id} | egrep "^(add|create) ${id} " | (read hdr; echo ${hdr}; LC_ALL=C sort)
+  ipset save ${id} | egrep "^(add|create) ${id} " | (read hdr; echo ${hdr}; LC_ALL=C sort --unique)
 }
 
 function import_ipset() {
