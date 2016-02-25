@@ -36,8 +36,14 @@ define ipset (
         ensure  => present,
         source  => regsubst($set, '^.{7}', ''),
       }
+    } elsif is_array($set) {
+      # create file with ipset, one record per line
+      file { "${::ipset::params::config_path}/${title}.set":
+        ensure  => present,
+        content => inline_template('<%= (@set.map { |i| i.to_s }).join("\n") %>'),
+      }
     } else {
-      # passed directly as content (from template for example)
+      # passed directly as content string (from template for example)
       file { "${::ipset::params::config_path}/${title}.set":
         ensure  => present,
         content => $set,
