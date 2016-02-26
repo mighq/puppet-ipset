@@ -1,3 +1,13 @@
+2016-02-26 - 0.3.0
+* support for passing set content as an array
+* using swap when changing set contents - solves iptables cooperation problems
+* ability to not sync the runtime (in-kernel) state with configs
+* ability to change only one of set options
+* input cleanup for duplicates in set content
+* better performance when checking for set existence
+* config folder for debian changed to /etc/ipset.d
+* other minor code & bug fixes
+
 2015-04-26 - 0.2.1
 * documentation update
 
