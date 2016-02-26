@@ -1,6 +1,6 @@
 {
   "name": "mighq-ipset",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "author": "contact@mighq.net",
   "summary": "Linux ipsets management.",
   "license": "Apache-2.0",

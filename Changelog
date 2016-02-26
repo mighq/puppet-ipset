@@ -1,3 +1,5 @@
+2016-02-26 - 0.3.1
+* /32 and /128 entries fix
 2016-02-26 - 0.3.0
 * support for passing set content as an array
 * using swap when changing set contents - solves iptables cooperation problems
