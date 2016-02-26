@@ -36,7 +36,7 @@ function get_content_file() {
 
 function construct_ipset_dump() {
   local id=$1
-  local setname=${2:-$id}
+  local alias=${2:-${id}} # alias for swapping
 
   local f_header=$(get_header_file ${id})
   local f_content=$(get_content_file ${id})
@@ -52,8 +52,8 @@ function construct_ipset_dump() {
 
   # recreate the dump format from config files manually
   (
-    cat "${f_header}" | sed "s/^create ${id} /create ${setname} /"
-    cat "${f_content}" | grep -v '^[ ]*#' | sed -re "s|(\.\[0-9\]\+)/32|\\1|;s|/128||;s/(.*)/add ${setname} \\1/" | LC_ALL=C sort
+    cat "${f_header}" | sed "s/^create ${id} /create ${alias} /";
+    cat "${f_content}" | grep -v '^[ ]*#' | grep -v '^[ ]*$' | sed -re "s/(.*)/add ${alias} \\1/" | LC_ALL=C sort --unique
   )
 }
 
@@ -65,9 +65,9 @@ function get_ipset_dump() {
 
 function import_ipset() {
   local id=$1
-  local setname=${2:-$id}
+  local alias=${2:-${id}}
 
-  ipset restore < <(construct_ipset_dump ${id} ${setname})
+  ipset restore < <(construct_ipset_dump ${id} ${alias})
 }
 
 function ipset_exists() {
@@ -164,14 +164,16 @@ if ipset_exists ${set_id}; then
         exit 3
       fi
 
+      swap_alias="SWAP_${set_id}"
+
       # create a new set with expected content, to swap with old set
-      import_ipset ${set_id} SWAP_${set_id}
+      import_ipset ${set_id} ${swap_alias}
 
       # swap the contents of the sets
-      ipset swap SWAP_${set_id} ${set_id}
+      ipset swap ${swap_alias} ${set_id}
 
       # drop the swap
-      ipset destroy SWAP_${set_id}
+      ipset destroy ${swap_alias}
     else
       # no difference
       exit 0
