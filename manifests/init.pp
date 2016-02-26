@@ -55,10 +55,10 @@ define ipset (
     exec { "sync_ipset_${title}":
       # use helper script to do the sync
       command   => "/usr/local/sbin/ipset_sync -c '${::ipset::params::config_path}'    -i ${title}",
+      path      => [ '/sbin', '/usr/sbin', '/bin', '/usr/bin' ],
+
       # only when difference with in-kernel set is detected
       unless    => "/usr/local/sbin/ipset_sync -c '${::ipset::params::config_path}' -d -i ${title}",
-
-      path      => [ '/sbin', '/usr/sbin', '/bin', '/usr/bin' ],
 
       require   => Package['ipset'],
     }
@@ -75,8 +75,11 @@ define ipset (
     }
 
     # clear ipset from kernel
-    exec { "/usr/sbin/ipset destroy ${title}":
-      onlyif  => "/usr/sbin/ipset list ${title} &>/dev/null",
+    exec { "ipset destroy ${title}":
+      path    => [ '/sbin', '/usr/sbin', '/bin', '/usr/bin' ],
+
+      onlyif  => "/usr/sbin/ipset list -name ${title} &>/dev/null",
+
       require => Package['ipset'],
     }
   }
