@@ -1,8 +1,8 @@
 define ipset (
-  $ensure = undef,
   $set,
-  $type = 'hash:ip',
-  $options = {},
+  $ensure       = 'present',
+  $type         = 'hash:ip',
+  $options      = {},
   $keep_in_sync = true,
 ) {
   include ipset::params

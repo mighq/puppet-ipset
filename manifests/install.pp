@@ -5,8 +5,8 @@ class ipset::install {
 
   # main package
   package { $::ipset::params::package:
-    alias  => 'ipset',
     ensure => installed,
+    alias  => 'ipset',
   }
 
   # directory with config profiles (*.set & *.hdr files)
