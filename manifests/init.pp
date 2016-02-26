@@ -2,21 +2,25 @@ define ipset (
   $ensure = undef,
   $set,
   $type = 'hash:ip',
-  $options = {
-    'family'   => 'inet',
-    'hashsize' => '1024',
-    'maxelem'  => '65536',
-  },
+  $options = {},
   $keep_in_sync = true,
 ) {
   include ipset::params
 
   include ipset::install
 
+  $default_options = {
+    'family'   => 'inet',
+    'hashsize' => '1024',
+    'maxelem'  => '65536',
+  }
+
+  $actual_options = merge($default_options, $options)
+
   if $ensure != 'absent' {
     # assert "present" target
 
-    $opt_string = inline_template('<%= (@options.sort.map { |k,v| k.to_s + " " + v.to_s }).join(" ") %>')
+    $opt_string = inline_template('<%= (@actual_options.sort.map { |k,v| k.to_s + " " + v.to_s }).join(" ") %>')
 
     # header
     file { "${::ipset::params::config_path}/${title}.hdr":
