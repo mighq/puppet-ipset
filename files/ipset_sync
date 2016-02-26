@@ -73,7 +73,7 @@ function import_ipset() {
 function ipset_exists() {
   local id=$1
 
-  ipset list ${id} > /dev/null 2>&1
+  ipset list -name ${id} > /dev/null 2>&1
 }
 
 function ipset_hdr_insync() {
