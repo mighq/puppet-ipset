@@ -76,23 +76,25 @@ function ipset_exists() {
   ipset list ${id} > /dev/null 2>&1
 }
 
-function ipset_insync() {
-  local id=$1
-
-  diff <(get_ipset_dump ${id}) <(construct_ipset_dump ${id}) > /dev/null
-}
-
 function ipset_hdr_insync() {
   local id=$1
 
-  diff <(get_ipset_dump ${id} | grep ^create) <(construct_ipset_dump ${id} | grep ^create) > /dev/null
+  ipset_insync_common ${id} create
 }
 
 function ipset_set_insync() {
   local id=$1
 
-  diff <(get_ipset_dump ${id} | grep ^add) <(construct_ipset_dump ${id} | grep ^add) > /dev/null
+  ipset_insync_common ${id} add
 }
+
+function ipset_insync_common() {
+  local id=$1
+  local pfx=$2
+
+  diff <(get_ipset_dump ${id} | grep ^${pfx}) <(construct_ipset_dump ${id} | grep ^${pfx}) > /dev/null
+}
+
 
 ### === main ===
 
@@ -151,6 +153,7 @@ if ipset_exists ${set_id}; then
     # create it with content as expected
     import_ipset ${set_id}
   else
+    # hdr is the same
     if ! ipset_set_insync ${set_id}; then
       # loaded set is different
 
@@ -169,8 +172,8 @@ if ipset_exists ${set_id}; then
 
       # drop the swap
       ipset destroy SWAP_${set_id}
-      # no difference
     else
+      # no difference
       exit 0
     fi
   fi
