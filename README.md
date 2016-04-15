@@ -45,7 +45,7 @@ Set will be filled in from the file present on the target computer's filesystem.
     ipset { 'bar':
       ensure => present,
       set    => 'file:///tmp/bar_set_content',
-      type    => 'hash:net',
+      type   => 'hash:net',
     }
 
 ### puppet master file
