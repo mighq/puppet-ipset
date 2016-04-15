@@ -8,7 +8,7 @@ default_cfg='/etc/sysconfig/ipset.d'
 
 usage() {
 cat << EOF
-Usage: ${0/*\//} [-c CONFIG_DIR] [-d] -i SETNAME
+Usage: ${0/*\//} [-c CONFIG_DIR] [-d] [-v] -i SETNAME
 
 Ipset synchronization helper. Applies configured ipset to the kernel.
 
@@ -21,6 +21,7 @@ Options:
       Does not apply configured state to the kernel
         * 0 exit code, when set is in sync
         * non-0 exit code, when the set differs from configured state
+  -v  Verbose output
   -h  Shows this help message
   -i  Name of managed ipset
 EOF
@@ -92,7 +93,18 @@ function ipset_insync_common() {
   local id=$1
   local pfx=$2
 
-  diff <(get_ipset_dump ${id} | grep ^${pfx}) <(construct_ipset_dump ${id} | grep ^${pfx}) > /dev/null
+
+  # compare configured and runtime config
+  tf=$(mktemp)
+  diff <(get_ipset_dump ${id} | grep ^${pfx}) <(construct_ipset_dump ${id} | grep ^${pfx}) > ${tf}
+
+  # show differences, if requested by CLI option
+  if [ -n "${verbose_output}" ] && [ ${verbose_output} -gt 0 ]; then
+    cat "${tf}"
+  fi
+
+  # cleanup
+  rm -f "${tf}"
 }
 
 
@@ -104,7 +116,7 @@ set_id=''
 check_only=0
 cfg="${default_cfg}"
 
-while getopts "c:dhi:" OPTION; do
+while getopts "vc:dhi:" OPTION; do
     case ${OPTION} in
       c)
         cfg=${OPTARG}
@@ -118,6 +130,9 @@ while getopts "c:dhi:" OPTION; do
         ;;
       i)
         set_id=${OPTARG}
+        ;;
+      v)
+        verbose_output=1
         ;;
     esac
 done
