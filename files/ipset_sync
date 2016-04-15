@@ -54,7 +54,20 @@ function construct_ipset_dump() {
   # recreate the dump format from config files manually
   (
     cat "${f_header}" | sed "s/^create ${id} /create ${alias} /";
-    cat "${f_content}" | grep -v '^[ ]*#' | grep -v '^[ ]*$' | sed -re 's@/((32)|(128))$@@' | sed -re "s/(.*)/add ${alias} \\1/" | LC_ALL=C sort --unique
+    # * skip
+    #   * comment lines
+    #   * empty lines
+    # * cleanup
+    #   * network mask suffix in complete IP (IPv4=32, IPv6=128)
+    #   * trim whitespaces
+    cat "${f_content}" | \
+      grep -v '^[[:space:]]*#' | \
+      grep -v '^[[:space:]]*$' | \
+      sed -re 's@^[[:space:]]*@@' | \
+      sed -re 's@[[:space:]]*$@@' | \
+      sed -re 's@/((32)|(128))$@@' | \
+      sed -re "s/(.*)/add ${alias} \\1/" | \
+      LC_ALL=C sort --unique
   )
 }
 
