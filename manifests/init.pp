@@ -32,14 +32,14 @@ define ipset (
     if $set =~ /^puppet:\/\// {
       # passed as puppet file
       file { "${::ipset::params::config_path}/${title}.set":
-        ensure  => present,
-        source  => $set,
+        ensure => present,
+        source => $set,
       }
     } elsif $set =~ /^file:\/\// {
       # passed as target node file
       file { "${::ipset::params::config_path}/${title}.set":
-        ensure  => present,
-        source  => regsubst($set, '^.{7}', ''),
+        ensure => present,
+        source => regsubst($set, '^.{7}', ''),
       }
     } elsif is_array($set) {
       # create file with ipset, one record per line
@@ -58,13 +58,13 @@ define ipset (
     # sync if needed by helper script
     exec { "sync_ipset_${title}":
       # use helper script to do the sync
-      command   => "/usr/local/sbin/ipset_sync -c '${::ipset::params::config_path}'    -i ${title}",
-      path      => [ '/sbin', '/usr/sbin', '/bin', '/usr/bin' ],
+      command => "/usr/local/sbin/ipset_sync -c '${::ipset::params::config_path}'    -i ${title}",
+      path    => [ '/sbin', '/usr/sbin', '/bin', '/usr/bin' ],
 
       # only when difference with in-kernel set is detected
-      unless    => "/usr/local/sbin/ipset_sync -c '${::ipset::params::config_path}' -d -i ${title}",
+      unless  => "/usr/local/sbin/ipset_sync -c '${::ipset::params::config_path}' -d -i ${title}",
 
-      require   => Package['ipset'],
+      require => Package['ipset'],
     }
 
     if $keep_in_sync {
