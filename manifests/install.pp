@@ -26,6 +26,13 @@ class ipset::install {
       mode    => '0644',
       content => template("${module_name}/init.upstart.erb"),
     }
+    # do not use original RC start script from the ipset package
+    # it is hard to define dependencies there
+    # also, it can collide with what we define through puppet
+    service { 'ipset':
+      enable   => false,
+      provider => 'redhat',
+    }
   } else {
     if $::osfamily == 'RedHat' and $::operatingsystemmajrelease == '7' {
       # systemd
