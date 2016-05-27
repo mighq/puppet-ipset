@@ -1,0 +1,2 @@
+all:
+	puppet module build .
