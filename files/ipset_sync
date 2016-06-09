@@ -110,6 +110,7 @@ function ipset_insync_common() {
   # compare configured and runtime config
   tf=$(mktemp)
   diff <(get_ipset_dump ${id} | grep ^${pfx}) <(construct_ipset_dump ${id} | grep ^${pfx}) > ${tf}
+  local ret=$?
 
   # show differences, if requested by CLI option
   if [ -n "${verbose_output}" ] && [ ${verbose_output} -gt 0 ]; then
@@ -118,6 +119,7 @@ function ipset_insync_common() {
 
   # cleanup
   rm -f "${tf}"
+  return ${ret}
 }
 
 
