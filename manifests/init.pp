@@ -17,7 +17,7 @@ define ipset (
 
   $actual_options = merge($default_options, $options)
 
-  if $ensure != 'absent' {
+  if $ensure == 'present' {
     # assert "present" target
 
     $opt_string = inline_template('<%= (@actual_options.sort.map { |k,v| k.to_s + " " + v.to_s }).join(" ") %>')
@@ -70,7 +70,7 @@ define ipset (
     if $keep_in_sync {
         File["${::ipset::params::config_path}/${title}.set"] ~> Exec["sync_ipset_${title}"]
     }
-  } else {
+  } elsif $ensure == 'absent' {
     # ensuring absence
 
     # do not contain config files
@@ -86,5 +86,7 @@ define ipset (
 
       require => Package['ipset'],
     }
+  } else {
+    fail('Unsupported "ensure" parameter.')
   }
 }
