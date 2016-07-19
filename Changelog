@@ -1,3 +1,10 @@
+2016-07-19 - 0.5.0
+* improved support for rhel 7 + service deps
+* fix from pull request #10 & #13
+* be more strict what we accept as params
+* fix: actually do the removal
+* if loading of set contents fail, fail puppet
+* ipset::unmanaged support
 2016-06-16 - 0.4.1
 * fix lost return value in ipset_sync
 2016-05-27 - 0.4.0
