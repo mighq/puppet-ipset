@@ -3,6 +3,9 @@ define ipset (
   $ensure       = 'present',
   $type         = 'hash:ip',
   $options      = {},
+  # do not touch what is inside the set, just its header (properties)
+  $ignore_contents = false,
+  # keep definition file and in-kernel runtime state in sync
   $keep_in_sync = true,
 ) {
   include ipset::params
@@ -55,14 +58,22 @@ define ipset (
       }
     }
 
+    # add switch to script, if we 
+    if $ignore_contents {
+      $ignore_contents_opt = ' -n'
+    } else {
+      $ignore_contents_opt = ''
+    }
+
     # sync if needed by helper script
     exec { "sync_ipset_${title}":
-      # use helper script to do the sync
-      command => "/usr/local/sbin/ipset_sync -c '${::ipset::params::config_path}'    -i ${title}",
       path    => [ '/sbin', '/usr/sbin', '/bin', '/usr/bin' ],
 
+      # use helper script to do the sync
+      command => "/usr/local/sbin/ipset_sync -c '${::ipset::params::config_path}'    -i ${title}${ignore_contents_opt}",
+
       # only when difference with in-kernel set is detected
-      unless  => "/usr/local/sbin/ipset_sync -c '${::ipset::params::config_path}' -d -i ${title}",
+      unless  => "/usr/local/sbin/ipset_sync -c '${::ipset::params::config_path}' -d -i ${title}${ignore_contents_opt}",
 
       require => Package['ipset'],
     }

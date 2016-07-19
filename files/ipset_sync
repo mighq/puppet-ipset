@@ -8,7 +8,7 @@ default_cfg='/etc/sysconfig/ipset.d'
 
 usage() {
 cat << EOF
-Usage: ${0/*\//} [-c CONFIG_DIR] [-d] [-v] -i SETNAME
+Usage: ${0/*\//} [-c CONFIG_DIR] [-d] [-v] [-n] -i SETNAME
 
 Ipset synchronization helper. Applies configured ipset to the kernel.
 
@@ -21,6 +21,7 @@ Options:
       Does not apply configured state to the kernel
         * 0 exit code, when set is in sync
         * non-0 exit code, when the set differs from configured state
+  -n  Do not sync ipset contents, just headers
   -v  Verbose output
   -h  Shows this help message
   -i  Name of managed ipset
@@ -38,6 +39,7 @@ function get_content_file() {
 function construct_ipset_dump() {
   local id=$1
   local alias=${2:-${id}} # alias for swapping
+  local no_content=${3:-0}
 
   local f_header=$(get_header_file ${id})
   local f_content=$(get_content_file ${id})
@@ -53,21 +55,24 @@ function construct_ipset_dump() {
 
   # recreate the dump format from config files manually
   (
-    cat "${f_header}" | sed "s/^create ${id} /create ${alias} /";
-    # * skip
-    #   * comment lines
-    #   * empty lines
-    # * cleanup
-    #   * network mask suffix in complete IP (IPv4=32, IPv6=128)
-    #   * trim whitespaces
-    cat "${f_content}" | \
-      grep -v '^[[:space:]]*#' | \
-      grep -v '^[[:space:]]*$' | \
-      sed -re 's@^[[:space:]]*@@' | \
-      sed -re 's@[[:space:]]*$@@' | \
-      sed -re 's@/((32)|(128))$@@' | \
-      sed -re "s/(.*)/add ${alias} \\1/" | \
-      LC_ALL=C sort --unique
+    cat "${f_header}" | sed "s/^create ${id} /create ${alias} /"
+
+    if [ ${no_content} -eq 0 ]; then
+      # * skip
+      #   * comment lines
+      #   * empty lines
+      # * cleanup
+      #   * network mask suffix in complete IP (IPv4=32, IPv6=128)
+      #   * trim whitespaces
+      cat "${f_content}" | \
+        grep -v '^[[:space:]]*#' | \
+        grep -v '^[[:space:]]*$' | \
+        sed -re 's@^[[:space:]]*@@' | \
+        sed -re 's@[[:space:]]*$@@' | \
+        sed -re 's@/((32)|(128))$@@' | \
+        sed -re "s/(.*)/add ${alias} \\1/" | \
+        LC_ALL=C sort --unique
+    fi
   )
 }
 
@@ -80,8 +85,9 @@ function get_ipset_dump() {
 function import_ipset() {
   local id=$1
   local alias=${2:-${id}}
+  local no_content=${3:-0}
 
-  ipset restore < <(construct_ipset_dump ${id} ${alias})
+  ipset restore < <(construct_ipset_dump ${id} ${alias} ${no_content})
 }
 
 function ipset_exists() {
@@ -131,9 +137,10 @@ function ipset_insync_common() {
 
 set_id=''
 check_only=0
+ignore_contents=0
 cfg="${default_cfg}"
 
-while getopts "vc:dhi:" OPTION; do
+while getopts "vc:dhi:n" OPTION; do
     case ${OPTION} in
       c)
         cfg=${OPTARG}
@@ -144,6 +151,9 @@ while getopts "vc:dhi:" OPTION; do
       h)
         usage
         exit 1
+        ;;
+      n)
+        ignore_contents=1
         ;;
       i)
         set_id=${OPTARG}
@@ -183,9 +193,16 @@ if ipset_exists ${set_id}; then
     ipset destroy ${set_id}
 
     # create it with content as expected
-    import_ipset ${set_id}
+    import_ipset ${set_id} ${set_id} ${ignore_contents}
   else
     # hdr is the same
+
+    # don't do anything more for dynamic sets
+    if [ ${ignore_contents} -gt 0 ]; then
+      # nothing to do
+      exit 0
+    fi
+
     if ! ipset_set_insync ${set_id}; then
       # loaded set is different
 
@@ -234,5 +251,5 @@ else
   fi
 
   # create it with content as expected
-  import_ipset ${set_id}
+  import_ipset ${set_id} ${set_id} ${ignore_contents}
 fi
