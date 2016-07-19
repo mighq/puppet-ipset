@@ -82,6 +82,7 @@ define ipset (
     exec { "ipset destroy ${title}":
       path    => [ '/sbin', '/usr/sbin', '/bin', '/usr/bin' ],
 
+      command => "/usr/sbin/ipset destroy ${title}",
       onlyif  => "/usr/sbin/ipset list -name ${title} &>/dev/null",
 
       require => Package['ipset'],
