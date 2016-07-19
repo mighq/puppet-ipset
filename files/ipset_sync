@@ -193,19 +193,32 @@ if ipset_exists ${set_id}; then
       if [ ${check_only} -ne 0 ]; then
         # indicate a difference
         # and don't continue
-        exit 3
+        exit 8
       fi
 
       swap_alias="SWAP_${set_id}"
 
       # create a new set with expected content, to swap with old set
       import_ipset ${set_id} ${swap_alias}
+      result=$?
 
-      # swap the contents of the sets
-      ipset swap ${swap_alias} ${set_id}
+      if [ ${result} -eq 0 ]; then
+        # if everything went fine
 
-      # drop the swap
+        # swap the contents of the sets, making it active
+        ipset swap ${swap_alias} ${set_id}
+      fi
+
+      # cleanup, drop the unused one
       ipset destroy ${swap_alias}
+
+      if [ ${result} -eq 0 ]; then
+        # success
+        exit 0
+      else
+        # return error code, if loading went wrong
+        exit 9
+      fi
     else
       # no difference
       exit 0
