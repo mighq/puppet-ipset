@@ -27,8 +27,8 @@ class ipset::install {
       # using exec instead of Service, because of bug:
       # https://tickets.puppetlabs.com/browse/PUP-6516
       exec { 'ipset_disable_distro':
-        command  => "/bin/bash -c '/etc/init.d/ipset stop && /sbin/chkconfig ipset off'",
-        unless   => "/bin/bash -c '/sbin/chkconfig | /bin/grep ipset | /bin/grep -qv :on'",
+        command => "/bin/bash -c '/etc/init.d/ipset stop && /sbin/chkconfig ipset off'",
+        unless  => "/bin/bash -c '/sbin/chkconfig | /bin/grep ipset | /bin/grep -qv :on'",
       }
       ->
       # upstart starter

@@ -9,10 +9,11 @@ define ipset::unmanaged(
   $keep_in_sync = true,
 ) {
   ipset { $title:
+    ensure          => $ensure,
+    #
     set             => '',
     ignore_contents => true,
     #
-    ensure          => $ensure,
     type            => $type,
     options         => $options,
     keep_in_sync    => $keep_in_sync,

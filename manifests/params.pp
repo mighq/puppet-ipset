@@ -1,7 +1,7 @@
 class ipset::params (
   # if uou use "firewalld" to manage firewall,
   # create instance of ipset::params class with this service name
-  $use_firewall_service = undef, 
+  $use_firewall_service = undef,
 ) {
   $package = $::osfamily ? {
     'RedHat' => 'ipset',
