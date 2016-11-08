@@ -29,6 +29,7 @@ class ipset::install {
       exec { 'ipset_disable_distro':
         command => "/bin/bash -c '/etc/init.d/ipset stop && /sbin/chkconfig ipset off'",
         unless  => "/bin/bash -c '/sbin/chkconfig | /bin/grep ipset | /bin/grep -qv :on'",
+        require => Package[$::ipset::params::package],
       }
       ->
       # upstart starter
