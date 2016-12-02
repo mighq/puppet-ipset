@@ -10,7 +10,7 @@ define ipset (
 ) {
   include ipset::params
 
-  include ipset::install
+  contain ipset::install
 
   $default_options = {
     'family'   => 'inet',

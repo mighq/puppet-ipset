@@ -5,7 +5,7 @@ class ipset::install {
 
   # main package
   package { $::ipset::params::package:
-    ensure => installed,
+    ensure => 'latest',
     alias  => 'ipset',
   }
 
@@ -20,6 +20,12 @@ class ipset::install {
   # autostart
   if $::osfamily == 'RedHat' {
     if $::operatingsystemmajrelease == '6' {
+      # make sure libmnl is installed
+      package { 'libmnl':
+        ensure => installed,
+        before => Package[$::ipset::params::package],
+      }
+
       # do not use original RC start script from the ipset package
       # it is hard to define dependencies there
       # also, it can collide with what we define through puppet
@@ -27,8 +33,9 @@ class ipset::install {
       # using exec instead of Service, because of bug:
       # https://tickets.puppetlabs.com/browse/PUP-6516
       exec { 'ipset_disable_distro':
-        command => "/bin/bash -c '/etc/init.d/ipset stop && /sbin/chkconfig ipset off'",
-        unless  => "/bin/bash -c '/sbin/chkconfig | /bin/grep ipset | /bin/grep -qv :on'",
+        command  => "/bin/bash -c '/etc/init.d/ipset stop && /sbin/chkconfig ipset off'",
+        unless   => "/bin/bash -c '/sbin/chkconfig | /bin/grep ipset | /bin/grep -qv :on'",
+        require  => Package[$::ipset::params::package],
       }
       ->
       # upstart starter
