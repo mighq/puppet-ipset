@@ -115,7 +115,10 @@ function ipset_insync_common() {
 
   # compare configured and runtime config
   tf=$(mktemp)
-  diff <(get_ipset_dump ${id} | grep ^${pfx}) <(construct_ipset_dump ${id} | grep ^${pfx}) > ${tf}
+  diff \
+    <(get_ipset_dump ${id} | grep ^${pfx} | sed 's/hashsize [0-9]\+ //g') \
+    <(construct_ipset_dump ${id} | grep ^${pfx} | sed 's/hashsize [0-9]\+ //g') \
+    > ${tf}
   local rv=$?
 
   # show differences, if requested by CLI option
