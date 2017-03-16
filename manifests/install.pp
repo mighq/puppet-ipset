@@ -40,6 +40,7 @@ class ipset::install {
       ->
       # upstart starter
       file { '/etc/init/ipset.conf':
+        ensure  => file,
         owner   => 'root',
         group   => 'root',
         mode    => '0644',
@@ -59,6 +60,7 @@ class ipset::install {
 
       # systemd service definition, there is no script in COS7
       file { '/usr/lib/systemd/system/ipset.service':
+        ensure  => file,
         owner   => 'root',
         group   => 'root',
         mode    => '0644',

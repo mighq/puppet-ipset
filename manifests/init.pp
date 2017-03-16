@@ -27,6 +27,7 @@ define ipset (
 
     # header
     file { "${::ipset::params::config_path}/${title}.hdr":
+      ensure  => file,
       content => "create ${title} ${type} ${opt_string}\n",
       notify  => Exec["sync_ipset_${title}"],
     }
@@ -35,25 +36,25 @@ define ipset (
     if is_array($set) {
       # create file with ipset, one record per line
       file { "${::ipset::params::config_path}/${title}.set":
-        ensure  => present,
+        ensure  => file,
         content => inline_template('<%= (@set.map { |i| i.to_s }).join("\n") %>'),
       }
     } elsif $set =~ /^puppet:\/\// {
       # passed as puppet file
       file { "${::ipset::params::config_path}/${title}.set":
-        ensure => present,
+        ensure => file,
         source => $set,
       }
     } elsif $set =~ /^file:\/\// {
       # passed as target node file
       file { "${::ipset::params::config_path}/${title}.set":
-        ensure => present,
+        ensure => file,
         source => regsubst($set, '^.{7}', ''),
       }
     } else {
       # passed directly as content string (from template for example)
       file { "${::ipset::params::config_path}/${title}.set":
-        ensure  => present,
+        ensure  => file,
         content => $set,
       }
     }
