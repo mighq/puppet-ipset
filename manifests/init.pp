@@ -32,7 +32,7 @@ define ipset (
     }
 
     # content
-    if is_array($set) {
+    if $set =~ Array {
       # create file with ipset, one record per line
       file { "${::ipset::params::config_path}/${title}.set":
         ensure  => present,
@@ -58,7 +58,7 @@ define ipset (
       }
     }
 
-    # add switch to script, if we 
+    # add switch to script, if we
     if $ignore_contents {
       $ignore_contents_opt = ' -n'
     } else {
