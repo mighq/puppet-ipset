@@ -67,8 +67,9 @@ class ipset::install {
       ~>
       # systemd service autostart
       service { 'ipset':
-        ensure => 'running',
-        enable => true,
+        ensure  => 'running',
+        enable  => true,
+        require => Ipset::Install::Helper_script['ipset_init'],
       }
     } else {
       warning('Autostart of ipset not implemented for this RedHat release.')
