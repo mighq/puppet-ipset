@@ -51,6 +51,7 @@ class ipset::install {
         name     => 'ipset',
         enable   => true,
         provider => 'upstart',
+        require  => Ipset::Install::Helper_script[ ['ipset_sync', 'ipset_init'] ]
       }
       # dependency is covered by running ipset before RC scripts suite, where firewall service is
     } elsif $::operatingsystemmajrelease == '7' {
@@ -67,8 +68,9 @@ class ipset::install {
       ~>
       # systemd service autostart
       service { 'ipset':
-        ensure => 'running',
-        enable => true,
+        ensure  => 'running',
+        enable  => true,
+        require => Ipset::Install::Helper_script[ ['ipset_sync', 'ipset_init'] ]
       }
     } else {
       warning('Autostart of ipset not implemented for this RedHat release.')
