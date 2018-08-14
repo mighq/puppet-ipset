@@ -1,3 +1,7 @@
+2018-08-14 - 0.6.0
+* ignore hashsize parameter when syncing live ipsets
+* fail if params cannot be synced (typically because ipset is already ised by iptables)
+* installation ordering
 2016-12-02 - 0.5.2
 * installation tuning
 2016-07-22 - 0.5.1
