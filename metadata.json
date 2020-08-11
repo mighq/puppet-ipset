@@ -1,6 +1,6 @@
 {
   "name": "mighq-ipset",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "author": "contact@mighq.net",
   "summary": "Linux ipsets management.",
   "license": "Apache-2.0",
@@ -18,10 +18,15 @@
       "operatingsystem": "RedHat",
       "operatingsystemrelease": [
         "6.x",
-        "7.x"
+        "7.x",
+        "8.x"
       ]
     }
   ],
   "dependencies": [
+    {
+      "name": "puppetlabs/stdlib",
+      "version_requirement": ">=4.1.0"
+    }
   ]
 }

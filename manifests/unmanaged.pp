@@ -11,6 +11,7 @@ define ipset::unmanaged(
   ipset { $title:
     set             => '',
     ignore_contents => true,
+    #
     ensure          => $ensure,
     type            => $type,
     options         => $options,

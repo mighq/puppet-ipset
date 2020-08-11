@@ -40,6 +40,7 @@ function construct_ipset_dump() {
   local id=$1
   local alias=${2:-${id}} # alias for swapping
   local no_content=${3:-0}
+  local no_header=${4:-0}
 
   local f_header=$(get_header_file ${id})
   local f_content=$(get_content_file ${id})
@@ -55,7 +56,7 @@ function construct_ipset_dump() {
 
   # recreate the dump format from config files manually
   (
-    cat "${f_header}" | sed "s/^create ${id} /create ${alias} /"
+    [ ${no_header} -eq 0 ] && cat "${f_header}" | sed "s/^create ${id} /create ${alias} /"
 
     if [ ${no_content} -eq 0 ]; then
       # * skip
@@ -69,7 +70,7 @@ function construct_ipset_dump() {
         grep -v '^[[:space:]]*$' | \
         sed -re 's@^[[:space:]]*@@' | \
         sed -re 's@[[:space:]]*$@@' | \
-        sed -re 's@/((32)|(128))$@@' | \
+        sed -re 's@(.*)/(32|128)(,.*)?@\1\3@' | \
         sed -re "s/(.*)/add ${alias} \\1/" | \
         LC_ALL=C sort --unique
     fi
@@ -86,8 +87,9 @@ function import_ipset() {
   local id=$1
   local alias=${2:-${id}}
   local no_content=${3:-0}
+  local no_header=${4:-0}
 
-  ipset restore < <(construct_ipset_dump ${id} ${alias} ${no_content})
+  ipset restore < <(construct_ipset_dump ${id} ${alias} ${no_content} ${no_header})
 }
 
 function ipset_exists() {
@@ -96,16 +98,10 @@ function ipset_exists() {
   ipset list -name ${id} > /dev/null 2>&1
 }
 
-function ipset_hdr_insync() {
+function ipset_total_insync() {
   local id=$1
 
-  ipset_insync_common ${id} create
-}
-
-function ipset_set_insync() {
-  local id=$1
-
-  ipset_insync_common ${id} add
+  ipset_insync_common ${id}
 }
 
 function ipset_insync_common() {
@@ -114,10 +110,7 @@ function ipset_insync_common() {
 
   # compare configured and runtime config
   tf=$(mktemp)
-  diff \
-    <(get_ipset_dump ${id}       | grep ^${pfx} | sed 's/hashsize [0-9]\+ //g') \
-    <(construct_ipset_dump ${id} | grep ^${pfx} | sed 's/hashsize [0-9]\+ //g') \
-    > ${tf}
+  diff <(get_ipset_dump ${id} | grep ^${pfx}) <(construct_ipset_dump ${id} | grep ^${pfx}) > ${tf}
   local rv=$?
 
   # show differences, if requested by CLI option
@@ -132,6 +125,15 @@ function ipset_insync_common() {
   return $rv
 }
 
+function ipset_type_insync() {
+  local id=$1
+
+  in_kernel_type=$(get_ipset_dump ${id} | grep ^create | awk '{print $3}')
+  generated_type=$(grep ^create $(get_header_file ${id}) | awk '{print $3}')
+
+  [[ $in_kernel_type == $generated_type ]]
+  return $?
+}
 
 ### === main ===
 
@@ -181,31 +183,11 @@ fi
 
 if ipset_exists ${set_id}; then
   # check for differences
-  if ! ipset_hdr_insync ${set_id}; then
-    # loaded hdr is different
-
-    # checking for diff only
-    if [ ${check_only} -ne 0 ]; then
-      # indicate a difference
-      # and don't continue
-      exit 3
-    fi
-
-    # drop the old one
-    ipset destroy ${set_id}
-
-    # there is big chance the set is already used by iptables
-    # and cannot be destroyed
-    # we cannot do anything about this
-    if [ $? -ne 0 ]; then
-      # indicate unrecoverable problem
-      exit 10
-    fi
-
-    # create it with content as expected
-    import_ipset ${set_id} ${set_id} ${ignore_contents}
+  if ! ipset_type_insync ${set_id}; then
+    # Incompatible set types
+    exit 10
   else
-    # hdr is the same
+    # type matches
 
     # don't do anything more for dynamic sets
     if [ ${ignore_contents} -gt 0 ]; then
@@ -213,7 +195,9 @@ if ipset_exists ${set_id}; then
       exit 0
     fi
 
-    if ! ipset_set_insync ${set_id}; then
+    if ipset_total_insync ${set_id}; then
+      exit 0
+    else
       # loaded set is different
 
       # checking for diff only
@@ -246,9 +230,6 @@ if ipset_exists ${set_id}; then
         # return error code, if loading went wrong
         exit 9
       fi
-    else
-      # no difference
-      exit 0
     fi
   fi
 else

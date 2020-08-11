@@ -5,7 +5,7 @@ class ipset::install {
 
   # main package
   package { $::ipset::params::package:
-    ensure => 'latest',
+    ensure => 'present',
     alias  => 'ipset',
   }
 
@@ -54,9 +54,11 @@ class ipset::install {
         require  => Ipset::Install::Helper_script[ ['ipset_sync', 'ipset_init'] ]
       }
       # dependency is covered by running ipset before RC scripts suite, where firewall service is
-    } elsif $::operatingsystemmajrelease == '7' {
+    } elsif $::operatingsystemmajrelease == '7' or $::operatingsystemmajrelease == '8' {
       # for management of dependencies
       $firewall_service = $::ipset::params::firewall_service
+
+      # TODO: use ipset-service package
 
       # systemd service definition, there is no script in COS7
       file { '/usr/lib/systemd/system/ipset.service':
@@ -71,6 +73,12 @@ class ipset::install {
         ensure  => 'running',
         enable  => true,
         require => Ipset::Install::Helper_script[ ['ipset_sync', 'ipset_init'] ]
+      }
+
+      exec { 'reload-ipset-systemd-unit-if-not-in-sync':
+        command  => 'systemctl daemon-reload',
+        onlyif   => 'systemctl cat ipset 2>&1 1>/dev/null | grep -q daemon-reload',
+        provider => shell,
       }
     } else {
       warning('Autostart of ipset not implemented for this RedHat release.')
