@@ -18,7 +18,17 @@ define ipset (
     'maxelem'  => '65536',
   }
 
-  $actual_options = merge($default_options, $options)
+  if $type == 'hash:mac' {
+    # family option is not available for type hash:mac
+    $_default_options = delete($default_options, 'family')
+  } elsif $type !~ /^hash:/ {
+    # family, hashsize and maxelem options are available only for hash:* (except hash:mac)
+    $_default_options = delete($default_options, ['family','hashsize','maxelem'])
+  } else {
+    $_default_options = $default_options
+  }
+
+  $actual_options = merge($_default_options, $options)
 
   if $ensure == 'present' {
     # assert "present" target
