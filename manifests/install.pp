@@ -68,6 +68,11 @@ class ipset::install {
         content => template("${module_name}/init.systemd.erb"),
       }
       ~>
+      exec { 'ipset systemctl daemon-reload':
+        command     => '/bin/systemctl daemon-reload',
+        refreshonly => true,
+      }
+      ~>
       # systemd service autostart
       service { 'ipset':
         ensure  => 'running',
